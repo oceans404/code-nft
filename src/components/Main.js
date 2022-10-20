@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import Button from 'muicss/lib/react/button';
-import html2canvas from 'html2canvas';
-import axios from 'axios';
-import { Modal } from '@mui/material';
-import Editor from './Editor';
-import useLocalStorage from '../hooks/useLocalStorage';
-import { truncateAddress } from '../helpers';
+import React, { useState, useEffect } from "react";
+import Button from "muicss/lib/react/button";
+import html2canvas from "html2canvas";
+import axios from "axios";
+import { Modal } from "@mui/material";
+import Editor from "./Editor";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { truncateAddress } from "../helpers";
 
 function Main(props) {
   const demoHTML = `<div class="container">
@@ -74,15 +74,16 @@ ${showExtras ? demoHTML : ``}
     width: 450px;
     height: 450px;
     overflow: hidden;
-    margin: 0 auto;
+    margin-left: -1px;
+    margin-top: -1px;
     /** End default properties.**/
   
     /** Feel free to edit starting here. **/
     
     background: ${
       showExtras
-        ? 'linear-gradient(45deg, #006163, #CCCCFF, #87D8C3)'
-        : '#e2e2e2'
+        ? "linear-gradient(45deg, #006163, #CCCCFF, #87D8C3)"
+        : "#e2e2e2"
     };
     color: white;
 }
@@ -91,10 +92,10 @@ ${showExtras ? demoHTML : ``}
 ${showExtras ? demoCSS : ``}
 `;
   const { isAuthenticated, address } = props;
-  const [html, setHtml] = useLocalStorage('html', defaultHTML(true));
-  const [css, setCss] = useLocalStorage('css', defaultCSS(true));
+  const [html, setHtml] = useLocalStorage("html", defaultHTML(true));
+  const [css, setCss] = useLocalStorage("css", defaultCSS(true));
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [nftImgSrc, setNftImgSrc] = useState(null);
   const [transactionDetails, setTransactionDetails] = useState(null);
   const [showCode, setShowCode] = useState(true);
@@ -102,29 +103,27 @@ ${showExtras ? demoCSS : ``}
   const handleSubmit = (evt) => {
     evt.preventDefault();
 
-    console.log(document.querySelector('#nftImage'));
-
     fetch(nftImgSrc)
       .then((res) => res.blob())
       .then((blob) => {
-        const file = new File([blob], 'capture.png', {
-          type: 'image/png',
+        const file = new File([blob], "capture.png", {
+          type: "image/png",
         });
         var fd = new FormData();
-        fd.append('file', file);
+        fd.append("file", file);
 
         const options = {
-          method: 'POST',
+          method: "POST",
           body: fd,
           headers: {
-            Authorization: '4908ca46-77d5-428f-ad4d-1a494ea4758e',
+            Authorization: "4908ca46-77d5-428f-ad4d-1a494ea4758e",
           },
         };
 
         fetch(
-          'https://api.nftport.xyz/v0/mints/easy/files?' +
+          "https://api.nftport.xyz/v0/mints/easy/files?" +
             new URLSearchParams({
-              chain: 'polygon',
+              chain: "polygon",
               name,
               description: `cOoOde by ${address}`,
               mint_to_address: address,
@@ -149,93 +148,126 @@ ${showExtras ? demoCSS : ``}
     setCss(defaultCSS(withExtras));
   };
 
+  const pinFile = async (imgsrc) => {
+    const formData = new FormData();
+
+    // append the file form data to
+    formData.append("file", imgsrc);
+
+    // the endpoint needed to upload the file
+    const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
+
+    const response = await axios.post(url, formData, {
+      maxContentLength: "Infinity",
+      headers: {
+        "Content-Type": `multipart/form-data;boundary=${formData._boundary}`,
+        pinata_api_key: process.env.REACT_APP_API_KEY,
+        pinata_secret_api_key: process.env.REACT_APP_API_SECRET,
+      },
+    });
+    console.log(`https://ipfs.io/ipfs/${response.data.IpfsHash}`);
+  };
+
+  async function createFile(src) {
+    let response = await fetch(src);
+    let data = await response.blob();
+    let metadata = {
+      type: "image/png",
+    };
+    let file = new File([data], "test.png", metadata);
+    console.log(file);
+    pinFile(file);
+  }
+
   const mintNFT = () => {
-    console.log('minting...');
+    console.log("minting...");
     setIsModalOpen(true);
 
-    html2canvas(document.querySelector('#cOoOde-nft')).then((canvas) => {
+    html2canvas(document.querySelector("#cOoOde-nft")).then((canvas) => {
       let image = new Image();
-      image.src = canvas.toDataURL('image/png', 1.0);
-      image.width = '450';
-      image.height = '450';
-      image.id = 'nftImage';
+      image.src = canvas.toDataURL("image/png", 1.0);
+      image.width = "450";
+      image.height = "450";
+      image.id = "nftImage";
 
       setNftImgSrc(image);
 
-      const holderdiv = document.getElementById('imgHolderDiv');
+      createFile(image.src);
+
+      const holderdiv = document.getElementById("imgHolderDiv");
       holderdiv.appendChild(image);
       // return image;
     });
   };
 
   return (
-    <div className='pane pane-code'>
+    <div className="pane pane-code">
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        aria-labelledby='modal-modal-title'
-        aria-describedby='modal-modal-description'
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
       >
-        <div className='modalContainer'>
+        <div className="modalContainer">
           <h1>Mint your NFT</h1>
-          <div id='imgHolderDiv'></div>
+          <div id="imgHolderDiv"></div>
           <form onSubmit={handleSubmit}>
             <label>
               NFT Name
               <input
-                type='text'
+                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </label>
-            <input type='submit' value='MINT!' />
+            <input type="submit" value="MINT!" />
           </form>
         </div>
       </Modal>
 
       {showCode && (
-        <div className='thirds'>
+        <div className="thirds">
           <Editor
-            language='xml'
-            displayName='html'
+            language="xml"
+            displayName="html"
             value={html}
             onChange={setHtml}
           />
         </div>
       )}
       {showCode && (
-        <div className='thirds'>
+        <div className="thirds">
           <Editor
-            language='css'
-            displayName='css'
+            language="css"
+            displayName="css"
             value={css}
             onChange={setCss}
           />
         </div>
       )}
 
-      <div className='thirds thirds-nft'>
+      <div className="thirds thirds-nft">
         <div>
-          <h2 className='cta'>
+          <h2 className="cta">
             {showCode
-              ? 'Code a cOoOL One of One'
+              ? "Code a cOoOL One of One"
               : `Successfully minted "${name}" by ${truncateAddress(address)}`}
           </h2>
           {!showCode && transactionDetails && (
             <div>
               <div>
-                Transaction:{' '}
+                Transaction:{" "}
                 <a
                   href={transactionDetails.transaction_external_url}
-                  target='_blank'
+                  target="_blank"
                 >
                   {transactionDetails.transaction_external_url}
                 </a>
               </div>
 
               <div>
-                Opensea:{' '}
-                <a href={`https://opensea.io/${address}`} target='_blank'>
+                Opensea:{" "}
+                <a href={`https://opensea.io/${address}`} target="_blank">
                   https://opensea.io/{address}
                 </a>
               </div>
@@ -265,8 +297,8 @@ ${showExtras ? demoCSS : ``}
             <Button onClick={() => resetToDefaults(false)}>Clear code</Button>
             <Button onClick={() => resetToDefaults(true)}>Reset demo</Button>
             <Button
-              className='btn-mint'
-              disabled={!isAuthenticated}
+              className="btn-mint"
+              // disabled={!isAuthenticated}
               onClick={() => mintNFT()}
             >
               Mint NFT
