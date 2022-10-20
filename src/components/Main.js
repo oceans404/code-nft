@@ -70,16 +70,6 @@ ${showExtras ? demoHTML : ``}
 }`;
 
   const defaultCSS = (showExtras) => `#cOoOde-nft {
-    /** Start default properties **/
-    width: 450px;
-    height: 450px;
-    overflow: hidden;
-    margin-left: -1px;
-    margin-top: -1px;
-    /** End default properties.**/
-  
-    /** Feel free to edit starting here. **/
-    
     background: ${
       showExtras
         ? "linear-gradient(45deg, #006163, #CCCCFF, #87D8C3)"
@@ -88,59 +78,49 @@ ${showExtras ? demoHTML : ``}
     color: white;
 }
 
-/** Add your CSS here **/
 ${showExtras ? demoCSS : ``}
 `;
-  const { isAuthenticated, address } = props;
+  const { isAuthenticated } = props;
   const [html, setHtml] = useLocalStorage("html", defaultHTML(true));
   const [css, setCss] = useLocalStorage("css", defaultCSS(true));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [ipfsUrl, setIpfsUrl] = useState("");
   const [nftImgSrc, setNftImgSrc] = useState(null);
   const [transactionDetails, setTransactionDetails] = useState(null);
   const [showCode, setShowCode] = useState(true);
 
+  const nftPortKey = process.env.REACT_APP_NFT_PORT_KEY;
+
   const handleSubmit = (evt) => {
     evt.preventDefault();
 
-    fetch(nftImgSrc)
-      .then((res) => res.blob())
-      .then((blob) => {
-        const file = new File([blob], "capture.png", {
-          type: "image/png",
-        });
-        var fd = new FormData();
-        fd.append("file", file);
-
-        const options = {
-          method: "POST",
-          body: fd,
-          headers: {
-            Authorization: "4908ca46-77d5-428f-ad4d-1a494ea4758e",
-          },
-        };
-
-        fetch(
-          "https://api.nftport.xyz/v0/mints/easy/files?" +
-            new URLSearchParams({
-              chain: "polygon",
-              name,
-              description: `cOoOde by ${address}`,
-              mint_to_address: address,
-            }),
-          options
-        )
-          .then(function (response) {
-            return response.json();
-          })
-          .then(function (responseJson) {
-            // Handle the response
-            console.log(responseJson);
-            setTransactionDetails(responseJson);
-            setIsModalOpen(false);
-            setShowCode(false);
-          });
+    fetch("https://api.nftport.xyz/v0/mints/easy/urls", {
+      method: "POST",
+      headers: {
+        Authorization: nftPortKey,
+      },
+      body: JSON.stringify({
+        chain: "polygon",
+        name,
+        description: `cOoOde by ${address}`,
+        file_url: ipfsUrl,
+        mint_to_address: address,
+      }),
+    })
+      .then(function (response) {
+        console.log(response);
+        return response.json();
+      })
+      .then(function (responseJson) {
+        // Handle the response
+        console.log(responseJson);
+        setTransactionDetails(responseJson);
+        setIsModalOpen(false);
+        setShowCode(false);
       });
+    // });
   };
 
   const resetToDefaults = (withExtras) => {
@@ -165,7 +145,9 @@ ${showExtras ? demoCSS : ``}
         pinata_secret_api_key: process.env.REACT_APP_API_SECRET,
       },
     });
-    console.log(`https://ipfs.io/ipfs/${response.data.IpfsHash}`);
+    const fileUrl = `https://ipfs.io/ipfs/${response.data.IpfsHash}`;
+    setIpfsUrl(fileUrl);
+    console.log(fileUrl);
   };
 
   async function createFile(src) {
@@ -218,6 +200,14 @@ ${showExtras ? demoCSS : ``}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <label>
+              Wallet address for mint
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
               />
             </label>
             <input type="submit" value="MINT!" />
